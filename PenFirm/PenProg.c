@@ -1,8 +1,10 @@
+#include <string.h>
+
 #include <util/delay.h>
 //#include <avr/eeprom.h>
 
 #include "USBtoSerial.h"
-#include "start_boot.h"
+//#include "start_boot.h"
 
 #define PENPROG_COMMAND_INVALID 0x00
 
@@ -107,15 +109,24 @@ typedef struct {
 #define GET_CLOCK_BIT_FROM_COMMAND(cmd,bit) ((cmd)->Command.JtagClockBits.data[(bit)/4] >> (((bit)%4)*2))
 #define SET_CLOCK_BIT_FROM_COMMAND(cmd,bit, val) ((cmd)->Command.JtagClockBitsResponse.data[(bit)/8] |= (val) << ((bit)%8))
 
+inline void jump_atmel_bootloader( void ) {
+    // start by disabling USB
+	USB_ShutDown( );
 
-typedef void (*BootloaderPtr_t)(void) __attribute__ ((noreturn));
-//void (*start_bootloader) (void)=(void (*)(void))0x1000;
-//typedef void (*BootPtr_t)(void) ATTR_NO_RETURN;
+    cli( );
+
+	/* Relocate the interrupt vector table to the bootloader section */
+    unsigned char temp = MCUCR;
+	MCUCR = temp | (1 << IVCE);
+	MCUCR = temp | (1 << IVSEL);
+
+    asm volatile ( "jmp 0x1000" );
+}
 
 
 void runPenProgCommand( PenProgCommand *cmd ) {
-	uint8_t outputBits;
-	PenProgCommand tmpCmd, origCmd;
+//	uint8_t outputBits;
+//	PenProgCommand tmpCmd, origCmd;
 	
 	switch ( cmd->type ) {
 		case PENPROG_COMMAND_GET_BOARD:
@@ -131,6 +142,13 @@ void runPenProgCommand( PenProgCommand *cmd ) {
 			
 			break;
 		*/
+		
+	    case PENPROG_COMMAND_JUMP_BOOTLOADER:
+			// on Penguino AVR, we support jumping to the Atmel bootloader
+            jump_atmel_bootloader( );
+
+			break;
+#if 0
 		case PENPROG_COMMAND_RESET:
 			// we only support system reset on Penguino AVR
 			
@@ -153,26 +171,6 @@ void runPenProgCommand( PenProgCommand *cmd ) {
 				SET_DDR_INPUT( JTAG_DDR, JTAG_PIN_NRST );
 				DISABLE_PORT_PULLUP( JTAG_PORT, JTAG_PIN_NRST );
 			}
-			
-			break;
-		
-		case PENPROG_COMMAND_JUMP_BOOTLOADER:
-			// on Penguino AVR, we support jumping to the Atmel bootloader
-			
-			// start by disabling USB
-			USB_ShutDown( );
-			
-			/* Relocate the interrupt vector table to the bootloader section */
-			MCUCR = (1 << IVCE);
-			MCUCR = (1 << IVSEL);
-			
-			//(*start_bootloader)( );
-			
-			cli( );
-			
-			/* Start the boot application */
-			BootloaderPtr_t BootStartPtr = (BootloaderPtr_t)0x1000;
-			BootStartPtr();
 			
 			break;
 		
@@ -241,7 +239,7 @@ void runPenProgCommand( PenProgCommand *cmd ) {
 			}
 			
 			break;
-		
+#endif
 		default:
 			cmd->type = PENPROG_COMMAND_INVALID;
 			
@@ -251,43 +249,44 @@ void runPenProgCommand( PenProgCommand *cmd ) {
 
 
 /** Task to run PENPROG */
-TASK(PENPROG_Task) {
-	if (USB_IsConnected) {
-		Endpoint_SelectEndpoint( PENPROG_RX_EPNUM );
-		
-		// check for a packet
-		if (Endpoint_IsOUTReceived()) {
-			/* Remember how large the incoming packet is */
-			uint16_t DataLength = Endpoint_BytesInEndpoint();
-		
-			/* Create a temp buffer big enough to hold the incoming endpoint packet */
-			uint8_t  Buffer[PENPROG_TXRX_EPSIZE];
+void PENPROG_Task(void) {
+	if (USB_DeviceState != DEVICE_STATE_Configured)
+	  return;
+
+	Endpoint_SelectEndpoint( PENPROG_DATA_EPNUM );
 	
-			/* Read in the incoming packet into the buffer */
-			Endpoint_Read_Stream_LE(&Buffer, DataLength);
-
-			/* Finalize the stream transfer to send the last packet */
-			Endpoint_ClearOUT();
-			
-			
-			/* Process command */
-			runPenProgCommand( (PenProgCommand *)Buffer );
-			
-			
-			/* Send response */
-			
-			/* Select the PenProg Tx Endpoint */
-			Endpoint_SelectEndpoint(PENPROG_TX_EPNUM);
-			
-			//while (!(Endpoint_IsINReady())); // wait until ready
-			Endpoint_WaitUntilReady( );
-		
-			/* Write the received data to the endpoint */
-			Endpoint_Write_Stream_LE(Buffer, PENPROG_TXRX_EPSIZE);
-
-			/* Finalize the stream transfer to send the last packet */
-			Endpoint_ClearIN();
-		}
-	}
+	if (!(Endpoint_IsOUTReceived()))
+	    return;
+	
+	/* Remember how large the incoming packet is */
+	uint16_t DataLength = Endpoint_BytesInEndpoint();
+	
+	/* Create a temp buffer big enough to hold the incoming endpoint packet */
+	uint8_t  Buffer[PENPROG_TXRX_EPSIZE];
+	
+	/* Read in the incoming packet into the buffer */
+	Endpoint_Read_Stream_LE(&Buffer, DataLength, NO_STREAM_CALLBACK);
+	
+	/* Finalize the stream transfer to send the last packet */
+	Endpoint_ClearOUT();
+	
+	
+	/* Process command */
+	runPenProgCommand( (PenProgCommand *)Buffer );
+	
+	
+	/* switch endpoint direction (we're about to write back our response) */
+	Endpoint_SetEndpointDirection(ENDPOINT_DIR_IN);
+	
+	/* Write the received data to the endpoint */
+	Endpoint_Write_Stream_LE(Buffer, PENPROG_TXRX_EPSIZE, NO_STREAM_CALLBACK);
+	
+	/* Finalize the stream transfer to send the last packet */
+	Endpoint_ClearIN();
+	
+	
+	/* wait for packet to send, go back to reading */
+	Endpoint_WaitUntilReady();
+	Endpoint_SetEndpointDirection(ENDPOINT_DIR_OUT);
 }
 

@@ -48,7 +48,7 @@
    #elif (defined(__AT90USB647__) || defined(__AT90USB646__))
       void (*start_bootloader) (void)=(void (*)(void))0x7800;
    #elif (defined(__AT90USB82__))
-      void (*start_bootloader) (void)=(void (*)(void))0x1000;
+      //void (*start_bootloader) (void)=(void (*)(void))0x1000;
    #else
       #error MCU part not define in project options
    #endif
@@ -58,7 +58,7 @@
    #elif (defined(__AVR_AT90USB647__) || defined(__AVR_AT90USB646__))
       void (*start_bootloader) (void)=(void (*)(void))0x7800;
    #elif (defined(__AVR_AT90USB82__))
-      void (*start_bootloader) (void)=(void (*)(void))0x1000;
+      //void (*start_bootloader) (void)=(void (*)(void))0x1000;
    #else
       #error MCU part not define in project options
    #endif
