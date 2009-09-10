@@ -85,7 +85,10 @@ void SetupHardware(void)
 	clock_prescale_set(clock_div_1);
 
 	/* Hardware Initialization */
-	Serial_Init(9600, false);
+	//Serial_Init(9600, false);
+	// the rest of serial_init is done by ReconfigureUSART
+	DDRD  |= (1 << 3);
+    PORTD |= (1 << 2);
 	LEDs_Init();
 	USB_Init();
 }
@@ -93,12 +96,13 @@ void SetupHardware(void)
 /** Event handler for the USB_Connect event. This indicates that the device is enumerating via the status LEDs and
  *  starts the library USB task to begin the enumeration and USB management process.
  */
+ /*
 void EVENT_USB_Device_Connect(void)
 {
-	/* Indicate USB enumerating */
+	// Indicate USB enumerating
 	LEDs_SetAllLEDs(LEDMASK_USB_ENUMERATING);
 }
-
+*/
 /** Event handler for the USB_Disconnect event. This indicates that the device is no longer connected to a host via
  *  the status LEDs and stops the USB management and CDC management tasks.
  */
@@ -331,12 +335,16 @@ void ReconfigureUSART(void)
 	  ConfigMask |= (1 << USBS1);
 
 	/* Determine data size - 5, 6, 7, or 8 bits are supported */
-	if (LineEncoding.DataBits == 6)
+	if (!(LineEncoding.DataBits & 1))
+	    ConfigMask |= (1 << UCSZ10);
+	if (LineEncoding.DataBits >= 7)
+	    ConfigMask |= (1 << UCSZ11);
+	/*if (LineEncoding.DataBits == 6)
 	  ConfigMask |= (1 << UCSZ10);
 	else if (LineEncoding.DataBits == 7)
 	  ConfigMask |= (1 << UCSZ11);
 	else if (LineEncoding.DataBits == 8)
-	  ConfigMask |= ((1 << UCSZ11) | (1 << UCSZ10));
+	  ConfigMask |= ((1 << UCSZ11) | (1 << UCSZ10));*/
 	
 	/* Enable double speed, gives better error percentages at 8MHz */
 	UCSR1A = (1 << U2X1);

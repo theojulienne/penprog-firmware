@@ -252,20 +252,22 @@ USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
  *  the string descriptor with index 0 (the first index). It is actually an array of 16-bit integers, which indicate
  *  via the language ID table available at USB.org what languages the device supports for its string descriptors.
  */
+#define LANGUAGE_STRING_SIZE USB_STRING_LEN(1)
 USB_Descriptor_String_t PROGMEM LanguageString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(1), .Type = DTYPE_String},
+	.Header                 = {.Size = LANGUAGE_STRING_SIZE, .Type = DTYPE_String},
 		
 	.UnicodeString          = {LANGUAGE_ID_ENG}
 };
 
 /** Manufacturer descriptor string. This is a Unicode string containing the manufacturer's details in human readable
  *  form, and is read out upon request by the host when the appropriate string ID is requested, listed in the Device
- *  Descriptor.
+ *  Descri1ptor.
  */
+#define MANU_STRING_SIZE USB_STRING_LEN(8)
 USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(8), .Type = DTYPE_String},
+	.Header                 = {.Size = MANU_STRING_SIZE, .Type = DTYPE_String},
 		
 	.UnicodeString          = L"Icy Labs"
 };
@@ -274,9 +276,10 @@ USB_Descriptor_String_t PROGMEM ManufacturerString =
  *  and is read out upon request by the host when the appropriate string ID is requested, listed in the Device
  *  Descriptor.
  */
+#define PRODUCT_STRING_SIZE USB_STRING_LEN(12)
 USB_Descriptor_String_t PROGMEM ProductString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(12), .Type = DTYPE_String},
+	.Header                 = {.Size = PRODUCT_STRING_SIZE, .Type = DTYPE_String},
 		
 	.UnicodeString          = L"Penguino AVR"
 };
@@ -310,15 +313,15 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue, const uint8_t wIndex,
 			{
 				case 0x00: 
 					Address = (void*)&LanguageString;
-					Size    = pgm_read_byte(&LanguageString.Header.Size);
+                    Size    = LANGUAGE_STRING_SIZE;//pgm_read_byte(&LanguageString.Header.Size);
 					break;
 				case 0x01: 
 					Address = (void*)&ManufacturerString;
-					Size    = pgm_read_byte(&ManufacturerString.Header.Size);
+					Size    = MANU_STRING_SIZE;//pgm_read_byte(&ManufacturerString.Header.Size);
 					break;
 				case 0x02: 
 					Address = (void*)&ProductString;
-					Size    = pgm_read_byte(&ProductString.Header.Size);
+					Size    = PRODUCT_STRING_SIZE;//pgm_read_byte(&ProductString.Header.Size);
 					break;
 			}
 			
