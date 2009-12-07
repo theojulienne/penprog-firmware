@@ -148,12 +148,12 @@ void runPenProgCommand( PenProgCommand *cmd ) {
 			} else {
 				// before we leave reset, set our JTAG pins to inputs
 				// for some extra safety
-				/*DISABLE_PORT_PULLUP( JTAG_PORT, JTAG_PIN_TDI );
+				DISABLE_PORT_PULLUP( JTAG_PORT, JTAG_PIN_TDI );
 				DISABLE_PORT_PULLUP( JTAG_PORT, JTAG_PIN_TMS );
 				DISABLE_PORT_PULLUP( JTAG_PORT, JTAG_PIN_TCK );
 				SET_DDR_INPUT( JTAG_DDR, JTAG_PIN_TDI );
 				SET_DDR_INPUT( JTAG_DDR, JTAG_PIN_TMS );
-				SET_DDR_INPUT( JTAG_DDR, JTAG_PIN_TCK );*/
+				SET_DDR_INPUT( JTAG_DDR, JTAG_PIN_TCK );
 
 
 				// in a normal state, set the port to input with no pull-up
