@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-RESULT=`/sbin/kextload -b 'au.com.icy.kext.PenguinoMatch'`
-
-exit 0
