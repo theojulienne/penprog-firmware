@@ -1,13 +1,10 @@
 /*
-             LUFA Library
-     Copyright (C) Dean Camera, 2009.
-              
-  dean [at] fourwalledcubicle [dot] com
-      www.fourwalledcubicle.com
-*/
+ * Penguino AVR USB firmware
+ */
 
 /*
-  Copyright 2009  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Based on LUFA example code, copyright 2009  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Penguino AVR modifications, copyright 2010 Icy Labs Pty. Ltd.
 
   Permission to use, copy, modify, and distribute this software
   and its documentation for any purpose and without fee is hereby
